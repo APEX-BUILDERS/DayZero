@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String      @id @default(uuid())
+  email      String      @unique
+  name       String?
+  createdAt  DateTime    @default(now())
+  workspaces Workspace[]
+}
+
+model Workspace {
+  id           String          @id @default(uuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id])
+  title        String
+  summary      String
+  sourcePrompt String
+  createdAt    DateTime        @default(now())
+  tasks        Task[]
+  blocks       ScheduleBlock[]
+  notes        Note[]
+
+  @@index([userId])
+}
+
+model Task {
+  id               String          @id @default(uuid())
+  workspaceId      String
+  workspace        Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  title            String
+  priority         String
+  deadline         DateTime?
+  estimatedMinutes Int?
+  status           String          @default("pending")
+  createdAt        DateTime        @default(now())
+  scheduleBlocks   ScheduleBlock[]
+  notes            Note[]
+
+  @@index([workspaceId])
+  @@index([status])
+}
+
+model ScheduleBlock {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  taskId      String
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  date        DateTime
+  label       String
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId])
+  @@index([taskId])
+}
+
+model Note {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  taskId      String?
+  task        Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  body        String
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId])
+  @@index([taskId])
+}
